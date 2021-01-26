@@ -1,19 +1,32 @@
 
 import puppeteer from 'puppeteer';
+import parseMoney from 'parse-money';
 import config from './config.json';
+import * as BankProduct from './BankProductModel';
 
 const url = 'https://www.tinkoff.ru/login/'; // URL we're scraping
 const login = config.login;
 const password = config.password;
 
 async function handleCardInfo(cardElements: puppeteer.ElementHandle<Element>[]) {
+    var productsArray = new Array<BankProduct.BankProductModel>()
     for (const card of cardElements) {
         const cardText = await card.getProperty('textContent')
         const cardValue = cardText.jsonValue()
         cardValue.then(function(value) {
-            console.log(String(value));
+            const stringValue = String(value)
+            console.log(stringValue);
+            const moneyRegexp = stringValue.match(/\d.*/)
+            console.log(moneyRegexp[0]);
+            const product = new BankProduct.BankProductModel('', BankProduct.BankProductType.debit, parseMoney(moneyRegexp[0]))
+            productsArray.push(product)
         })
     }
+
+    productsArray.forEach(element => {
+        console.log(element.amount.amount);
+        
+    });
 }
 
 (async () => {
