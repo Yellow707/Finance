@@ -15,18 +15,36 @@ async function handleCardInfo(cardElements: puppeteer.ElementHandle<Element>[]) 
         const cardValue = cardText.jsonValue()
         cardValue.then(function(value) {
             const stringValue = String(value)
-            console.log(stringValue);
-            const moneyRegexp = stringValue.match(/\d.*/)
-            console.log(moneyRegexp[0]);
-            const product = new BankProduct.BankProductModel('', BankProduct.BankProductType.debit, parseMoney(moneyRegexp[0]))
+            const product = mapBankData(BankProduct.BankType.tinkoff, stringValue)
             productsArray.push(product)
         })
     }
 
     productsArray.forEach(element => {
-        console.log(element.amount.amount);
-        
-    });
+        console.log(element)
+    })
+}
+
+function mapBankData(type: BankProduct.BankType, productData: String): BankProduct.BankProductModel {
+    const parsedData = productData.match(/(.*?)(\d.*)₽(.*)/)
+    
+    if (productData.includes('Счет Tinkoff Black')) {
+        return new BankProduct.BankProductModel(parsedData[1], BankProduct.BankProductType.debit, BankProduct.BankType.tinkoff, parseMoney(parsedData[2]))
+    }
+
+    if (productData.includes('Кредитный счет Перекресток')) {
+        return new BankProduct.BankProductModel(parsedData[1], BankProduct.BankProductType.credit, BankProduct.BankType.tinkoff, parseMoney(parsedData[2]))
+    }
+
+    if (productData.includes('Накопительный счет')) {
+        return new BankProduct.BankProductModel(parsedData[1], BankProduct.BankProductType.deposit, BankProduct.BankType.tinkoff, parseMoney(parsedData[2]))
+    }
+
+    if (productData.includes('Инвестиции')) {
+        return new BankProduct.BankProductModel(parsedData[1], BankProduct.BankProductType.investiton, BankProduct.BankType.tinkoff, parseMoney(parsedData[2]))
+    }
+
+    return 
 }
 
 (async () => {
@@ -45,9 +63,10 @@ async function handleCardInfo(cardElements: puppeteer.ElementHandle<Element>[]) 
     await page.waitForNavigation({waitUntil: 'networkidle2'})
     const hiddenCardsButton = await page.$('[class="AccountsListHeader__hiddenControl_b1UG_t"]')
     await hiddenCardsButton.click()
+    await page.waitForTimeout(500)
     const cardElements = await page.$$('[class="Item__infoBlock_m2f9X8"]')
     handleCardInfo(cardElements)
     await page.screenshot({path: 'example.png'})
   
     await browser.close();
-  })();
+  })()
