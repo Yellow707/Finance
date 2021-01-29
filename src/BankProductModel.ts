@@ -7,14 +7,25 @@ export enum BankProductType {
     deposit
 }
 
+export enum BankType {
+    tinkoff,
+    alfa,
+    sber
+}
+
 export class BankProductModel {
     name: string
-    type: BankProductType
+    productType: BankProductType
+    bankType: BankType
     amount: Money
+    credit?: Money
 
-    constructor(name: string, type: BankProductType, amount: Money) {
+
+    constructor(name: string, productType: BankProductType, bankType: BankType, amount: Money, credit?: Money) {
         this.name = name
-        this.type = type
+        this.productType = productType
         this.amount = amount
+        this.bankType = bankType
+        this.credit = credit
     }
 }
