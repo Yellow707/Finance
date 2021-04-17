@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@types/puppeteer": "^5.4.2",
-    "parse-money": "^1.0.12",
+    "parse-money": "git://github.com/Yellow707/parse-money",
     "puppeteer": "^5.5.0"
   }
 }
