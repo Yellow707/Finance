@@ -20,7 +20,6 @@ export class BankProductModel {
     amount: Money
     credit?: Money
 
-
     constructor(name: string, productType: BankProductType, bankType: BankType, amount: Money, credit?: Money) {
         this.name = name
         this.productType = productType
