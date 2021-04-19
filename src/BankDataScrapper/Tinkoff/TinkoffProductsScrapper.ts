@@ -1,5 +1,5 @@
-import { BaseBankProductsScrapperInterface } from './BaseScrapperInterface'
-import { BankProductModel, BankProductType, BankType } from "./BankProductModel";
+import { BaseBankProductsScrapperInterface } from '../BaseScrapperInterface';
+import { BankProductModel, BankProductType, BankType } from '../Model/BankProductModel';
 import puppeteer from 'puppeteer';
 import parseMoney from 'parse-money';
 

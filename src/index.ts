@@ -1,5 +1,5 @@
 import config from './config.json';
-import { TinkoffProductsScrapper } from './TinkoffProductsScrapper';
+import { TinkoffProductsScrapper } from './BankDataScrapper/Tinkoff/TinkoffProductsScrapper';
 
 const url = config.tinkoff.baseUrl; // URL we're scraping
 const login = config.tinkoff.login;
