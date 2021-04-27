@@ -57,9 +57,14 @@ export class TinkoffProductsScrapper implements BaseBankProductsScrapperInterfac
             cardValue.then(function(value) {
                 const stringValue = String(value)
                 const product = self.mapBankData(BankType.tinkoff, stringValue)
-                if ((product != undefined) && (product.productType == BankProductType.credit)) {
+                if (product == undefined) {
+                    return
+                }
+
+                if (product.productType == BankProductType.credit) {
                     creditCard = card
                 }
+
                 productsArray.push(product)
             })
         }
