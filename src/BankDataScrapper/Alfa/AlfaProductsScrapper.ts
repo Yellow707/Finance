@@ -31,7 +31,7 @@ export class AlfaProductsScrapper implements BaseBankProductsScrapperInterface {
     private async loginWith(login: string, password: string): Promise<boolean> {
         const browser = await puppeteer.launch({
             headless: false
-          });
+        });
         this.activePage = await browser.newPage();
         await this.activePage.goto(this.baseUrl);
         const loginElement = await this.activePage.$('[name="username"]')
