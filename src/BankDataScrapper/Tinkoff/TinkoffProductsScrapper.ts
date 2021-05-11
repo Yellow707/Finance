@@ -9,6 +9,7 @@ export class TinkoffProductsScrapper implements BaseBankProductsScrapperInterfac
     private password: string
     private baseUrl: string
 
+    private browser: puppeteer.Browser
     private activePage: puppeteer.Page
 
     constructor(login: string, password: string, baseUrl: string) {
@@ -26,8 +27,10 @@ export class TinkoffProductsScrapper implements BaseBankProductsScrapperInterfac
     }
 
     private async loginWith(login: string, password: string): Promise<puppeteer.Response> {
-        const browser = await puppeteer.launch();
-        this.activePage = await browser.newPage();
+        this.browser = await puppeteer.launch({
+            headless: false
+        });
+        this.activePage = await this.browser.newPage();
         await this.activePage.goto(this.baseUrl);
         const loginElement = await this.activePage.$('[name="login"]')
         await loginElement.type(login)
@@ -48,7 +51,7 @@ export class TinkoffProductsScrapper implements BaseBankProductsScrapperInterfac
 
     private async handleCardInfo(cardElements: puppeteer.ElementHandle<Element>[]): Promise<BankProductModel[]> {
         var productsArray = new Array<BankProductModel>()
-        var creditCard: any
+        var creditCardsElementsArray = new Array<puppeteer.ElementHandle<Element>>()
         var self = this
 
         for (const card of cardElements) {
@@ -62,14 +65,14 @@ export class TinkoffProductsScrapper implements BaseBankProductsScrapperInterfac
                 }
 
                 if (product.productType == BankProductType.credit) {
-                    creditCard = card
+                    creditCardsElementsArray.push(card)
                 }
 
                 productsArray.push(product)
             })
         }
     
-        await this.handleCreditInfo(creditCard, productsArray)
+        await this.handleCreditInfo(creditCardsElementsArray, productsArray)
 
         return productsArray
     }
@@ -81,7 +84,7 @@ export class TinkoffProductsScrapper implements BaseBankProductsScrapperInterfac
             return new BankProductModel(parsedData[1], BankProductType.debit, bankType, parseMoney(parsedData[2]))
         }
     
-        if (productData.includes('Кредитный счет Перекресток')) {
+        if (productData.includes('Кредитный счет')) {
             return new BankProductModel(parsedData[1], BankProductType.credit, bankType, parseMoney(parsedData[2]))
         }
     
@@ -96,19 +99,28 @@ export class TinkoffProductsScrapper implements BaseBankProductsScrapperInterfac
         return 
     }
 
-    private async handleCreditInfo(element: puppeteer.ElementHandle<Element>, productsArray: Array<BankProductModel>) {
-        await element.click()
-        await this.activePage.waitForNavigation({waitUntil: 'networkidle2'})
-        const creditCardInfoBlocks = await this.activePage.$$('[class="InfoPanelGrid__column_b238hW InfoPanelGrid__column_0_c238hW"]')
-        for (const block of creditCardInfoBlocks) {
-            const cardText = await block.getProperty('textContent')    
-            const cardValue = cardText.jsonValue()
-            cardValue.then(function(value) {
-                const stringValue = String(value)
-                const creditValue = stringValue.match(/(Текущая задолженность:(.*?₽))/)
-                var creditProduct = productsArray.find( product => product.productType == BankProductType.credit)
-                creditProduct.credit = parseMoney(creditValue[1])
+    private async handleCreditInfo(elements: puppeteer.ElementHandle<Element>[], productsArray: Array<BankProductModel>) {
+        for (const element of elements) {
+            await element.click({button: 'middle'})
+            const [tab1, mainPage, recentlyOpenedPage] = await this.browser.pages()
+            await recentlyOpenedPage.waitForNavigation({waitUntil: 'networkidle2'})
+            const creditCardInfoBlocks = await recentlyOpenedPage.$$('[class="InfoPanelGrid__column_b238hW InfoPanelGrid__column_0_c238hW"]')
+            const productNameBlock = await recentlyOpenedPage.$('[class="AccountSelect__name_b3f0hv"]')
+            const productName = await (await productNameBlock.getProperty('textContent')).jsonValue().then(function(value) {
+                return String(value)
             })
+            for (const block of creditCardInfoBlocks) {
+                const cardText = await block.getProperty('textContent')    
+                const cardValue = cardText.jsonValue()
+                cardValue.then(function(value) {
+                    const stringValue = String(value)
+                    const creditValue = stringValue.match(/(Текущая задолженность:(.*?₽))/)
+                    var creditProduct = productsArray.find( product => product.name == productName)
+                    creditProduct.credit = parseMoney(creditValue[1])
+                })
+            }
+
+            await recentlyOpenedPage.close()
         }
     }
 }
